@@ -61,7 +61,7 @@ const LOCALITY = 8;
 const liveCache = [];
 for (let i = -LOCALITY; i < LOCALITY; i++) {
   for (let j = -LOCALITY; j < LOCALITY; j++) {
-    const roll = luck([i, j].toString());
+    const roll = luck([i, j, "raven"].toString());
     if (roll < SPAWN_PROBABILITY) liveCache.push(makeCache(i, j)); // deterministic cell generation
   }
 }
@@ -77,13 +77,13 @@ function makeCache(i: number, j: number) {
 
   const cache = {
     rect: leaflet.rectangle(cell),
-    coins: 10,
+    coins: Math.floor(luck([i, j, "ally"].toString()) * 100),
     popup: () => {
       cache.rect.bindPopup(() => {
         const message = document.createElement("div");
         message.innerHTML =
           `This is a cache with <span id="value">${cache.coins}</span> coins
-        <button id="collect">collect</button>`;
+          <button id="collect">collect</button>`;
 
         const value = message.querySelector<HTMLSpanElement>("#value")!;
         const button = message.querySelector<HTMLButtonElement>("#collect")!;
