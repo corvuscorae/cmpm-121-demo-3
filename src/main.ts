@@ -47,13 +47,26 @@ const img = document.createElement("img");
 img.src = import.meta.resolve("../smiley.png");
 const ICON_URL = img.src;
 
+const ICON_WIDTH = MY_WINDOW.WIDTH / 15;
 const myIcon = leaflet.icon({
   iconUrl: ICON_URL,
-  iconSize: [MY_WINDOW.WIDTH / 15, MY_WINDOW.WIDTH / 15],
+  iconSize: [ICON_WIDTH, ICON_WIDTH],
 });
 
-const playerAvatar = leaflet.marker(INIT_LOCATION, { icon: myIcon });
-playerAvatar.addTo(map);
+const player = {
+  avatar: leaflet.marker(INIT_LOCATION, { icon: myIcon }),
+  coins: 0,
+  message: document.createElement("div"),
+  tooltip: () => {
+    player.message.innerHTML =
+      `you have <span id="value">${player.coins}</span> coins`;
+    return player.avatar.bindTooltip(player.message, {
+      offset: [ICON_WIDTH / 2, 0],
+    });
+  },
+};
+player.avatar.addTo(map);
+player.tooltip();
 
 // grid
 const CELL_WIDTH = 0.0001;
@@ -82,14 +95,32 @@ function makeCache(i: number, j: number) {
       cache.rect.bindPopup(() => {
         const message = document.createElement("div");
         message.innerHTML =
-          `This is a cache with <span id="value">${cache.coins}</span> coins
-          <button id="collect">collect</button>`;
+          `<div>This is a cache with <span id="value">${cache.coins}</span> coins</div>
+          <button id="collect">collect</button>
+          <button id="deposit">deposit</button>`;
 
-        const value = message.querySelector<HTMLSpanElement>("#value")!;
-        const button = message.querySelector<HTMLButtonElement>("#collect")!;
-        button.addEventListener("click", () => {
-          if (cache.coins > 0) cache.coins--;
-          value.innerHTML = cache.coins.toString();
+        const cacheValue = message.querySelector<HTMLSpanElement>("#value")!;
+        const playerValue = player.message.querySelector<HTMLSpanElement>(
+          "#value",
+        )!;
+
+        const buttons = [
+          message.querySelector<HTMLButtonElement>("#collect")!,
+          message.querySelector<HTMLButtonElement>("#deposit")!,
+        ];
+        buttons.forEach((button) => {
+          button.addEventListener("click", () => {
+            const delta = (button.id === "collect") ? -1 : 1;
+            const limiter = (button.id === "collect")
+              ? cache.coins
+              : player.coins;
+            if (limiter > 0) {
+              cache.coins += delta;
+              player.coins -= delta;
+            }
+            cacheValue.innerHTML = cache.coins.toString();
+            playerValue.innerHTML = player.coins.toString();
+          });
         });
         return message;
       });
