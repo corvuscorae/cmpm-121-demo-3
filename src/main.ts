@@ -57,14 +57,15 @@ playerAvatar.addTo(map);
 // grid
 const CELL_WIDTH = 0.0001;
 const LOCALITY = 8;
+const liveCache = [];
 for (let i = -LOCALITY; i < LOCALITY; i++) {
   for (let j = -LOCALITY; j < LOCALITY; j++) {
     const roll = luck([i, j].toString());
-    if (roll < SPAWN_PROBABILITY) drawCell(i, j); // deterministic cell generation
+    if (roll < SPAWN_PROBABILITY) liveCache.push(makeCache(i, j)); // deterministic cell generation
   }
 }
 
-function drawCell(i: number, j: number) {
+function makeCache(i: number, j: number) {
   const cell = leaflet.latLngBounds([
     [INIT_LOCATION.lat + i * CELL_WIDTH, INIT_LOCATION.lng + j * CELL_WIDTH],
     [
@@ -73,6 +74,29 @@ function drawCell(i: number, j: number) {
     ],
   ]);
 
-  const rect = leaflet.rectangle(cell);
-  rect.addTo(map);
+  const cache = {
+    rect: leaflet.rectangle(cell),
+    coins: 10,
+    popup: () => {
+      cache.rect.bindPopup(() => {
+        const message = document.createElement("div");
+        message.innerHTML = `This is a cache with ${cache.coins} coins`;
+        return message;
+      });
+    },
+    click: () => {
+      cache.rect.addEventListener("click", () => {
+        if (cache.coins > 0) cache.coins--;
+        console.log(cache.coins);
+      });
+    },
+  };
+
+  return cache;
 }
+
+liveCache.forEach((cache) => {
+  cache.rect.addTo(map);
+  cache.popup();
+  cache.click();
+});
