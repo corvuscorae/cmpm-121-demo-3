@@ -1,5 +1,6 @@
 // @deno-types="npm:@types/leaflet@^1.9.14"
 import leaflet from "leaflet";
+import luck from "./luck.ts";
 
 // Style sheets
 import "leaflet/dist/leaflet.css";
@@ -12,6 +13,8 @@ import "./leafletWorkaround.ts";
 const debug = {
   allowZoom: false,
 };
+
+const SPAWN_PROBABILITY = 0.10; // 10% spawn probability
 
 const MY_WINDOW = {
   WIDTH: globalThis.innerWidth,
@@ -51,19 +54,25 @@ const myIcon = leaflet.icon({
 const playerAvatar = leaflet.marker(INIT_LOCATION, { icon: myIcon });
 playerAvatar.addTo(map);
 
+// grid
 const CELL_WIDTH = 0.0001;
 const LOCALITY = 8;
 for (let i = -LOCALITY; i < LOCALITY; i++) {
   for (let j = -LOCALITY; j < LOCALITY; j++) {
-    const cell = leaflet.latLngBounds([
-      [INIT_LOCATION.lat + i * CELL_WIDTH, INIT_LOCATION.lng + j * CELL_WIDTH],
-      [
-        INIT_LOCATION.lat + (i + 1) * CELL_WIDTH,
-        INIT_LOCATION.lng + (j + 1) * CELL_WIDTH,
-      ],
-    ]);
-
-    const rect = leaflet.rectangle(cell);
-    rect.addTo(map);
+    const roll = luck([i, j].toString());
+    if (roll < SPAWN_PROBABILITY) drawCell(i, j); // deterministic cell generation
   }
+}
+
+function drawCell(i: number, j: number) {
+  const cell = leaflet.latLngBounds([
+    [INIT_LOCATION.lat + i * CELL_WIDTH, INIT_LOCATION.lng + j * CELL_WIDTH],
+    [
+      INIT_LOCATION.lat + (i + 1) * CELL_WIDTH,
+      INIT_LOCATION.lng + (j + 1) * CELL_WIDTH,
+    ],
+  ]);
+
+  const rect = leaflet.rectangle(cell);
+  rect.addTo(map);
 }
