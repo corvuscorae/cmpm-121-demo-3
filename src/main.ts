@@ -19,7 +19,7 @@ const MY_WINDOW = {
 };
 
 const INIT_LOCATION = leaflet.latLng(36.98949379578401, -122.06277128548504);
-const MAX_ZOOM = 20;
+const MAX_ZOOM = 23;
 const MIN_ZOOM = 15;
 const INIT_ZOOM = (MAX_ZOOM + MIN_ZOOM) / 2;
 
@@ -50,3 +50,20 @@ const myIcon = leaflet.icon({
 
 const playerAvatar = leaflet.marker(INIT_LOCATION, { icon: myIcon });
 playerAvatar.addTo(map);
+
+const CELL_WIDTH = 0.0001;
+const LOCALITY = 8;
+for (let i = -LOCALITY; i < LOCALITY; i++) {
+  for (let j = -LOCALITY; j < LOCALITY; j++) {
+    const cell = leaflet.latLngBounds([
+      [INIT_LOCATION.lat + i * CELL_WIDTH, INIT_LOCATION.lng + j * CELL_WIDTH],
+      [
+        INIT_LOCATION.lat + (i + 1) * CELL_WIDTH,
+        INIT_LOCATION.lng + (j + 1) * CELL_WIDTH,
+      ],
+    ]);
+
+    const rect = leaflet.rectangle(cell);
+    rect.addTo(map);
+  }
+}

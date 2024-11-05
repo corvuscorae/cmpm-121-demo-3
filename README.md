@@ -8,7 +8,7 @@ Map background: [OpenStreetMap](http://www.openstreetmap.org/copyright)
 
 ### D3.a
 - [x] draw map to webpage
-- [ ] implement a latitude–longitude grid where cells are 0.0001 degrees wide
+- [x] implement a latitude–longitude grid where cells are 0.0001 degrees wide
 - [x] add a player marker
 - [ ] deterministically generated cache locations around initial location
     - cache should be at 10% of the grid cells that are within 8 cell-steps away from the player’s current location
