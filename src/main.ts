@@ -34,6 +34,7 @@ const map = leaflet.map(document.getElementById("map")!, {
   zoomControl: debug.allowZoom,
   scrollWheelZoom: debug.allowZoom,
 });
+map.doubleClickZoom.disable();
 
 leaflet.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: MAX_ZOOM,
@@ -80,14 +81,17 @@ function makeCache(i: number, j: number) {
     popup: () => {
       cache.rect.bindPopup(() => {
         const message = document.createElement("div");
-        message.innerHTML = `This is a cache with ${cache.coins} coins`;
+        message.innerHTML =
+          `This is a cache with <span id="value">${cache.coins}</span> coins
+        <button id="collect">collect</button>`;
+
+        const value = message.querySelector<HTMLSpanElement>("#value")!;
+        const button = message.querySelector<HTMLButtonElement>("#collect")!;
+        button.addEventListener("click", () => {
+          if (cache.coins > 0) cache.coins--;
+          value.innerHTML = cache.coins.toString();
+        });
         return message;
-      });
-    },
-    click: () => {
-      cache.rect.addEventListener("click", () => {
-        if (cache.coins > 0) cache.coins--;
-        console.log(cache.coins);
       });
     },
   };
@@ -98,5 +102,4 @@ function makeCache(i: number, j: number) {
 liveCache.forEach((cache) => {
   cache.rect.addTo(map);
   cache.popup();
-  cache.click();
 });
