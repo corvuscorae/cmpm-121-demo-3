@@ -19,19 +19,21 @@ Map background: [OpenStreetMap](http://www.openstreetmap.org/copyright)
 - [x] ...so player can transport coins from one cache to another by collecting and depositing coins (using those buttons in pop up!)
 
 ### D3.b
-- [ ] represent grid cells using a global coordinate system anchored at [Null Island](https://en.wikipedia.org/wiki/Null_Island) (0°N 0°E)
+- [x] represent grid cells using a global coordinate system anchored at [Null Island](https://en.wikipedia.org/wiki/Null_Island) (0°N 0°E)
     - the cell for the Oakes College classroom site would be {i: 369894, j: -1220627}.
-- [ ] refactor conversion of lat-lng pairs into game cells
+- [x] refactor conversion of lat-lng pairs into game cells
     - USE FLYWEIGHT PATTERN
-- [ ] give coins an ID attribute
-- [ ] base coin IDs on the coords of the cache it was originally spawned in
-- [ ] each coin ID should be unique
+- [x] give coins an ID attribute
+- [x] base coin IDs on the coords of the cache it was originally spawned in
+- [x] each coin ID should be unique
     - example: {i: 369894, j: -1220627, serial: 0}
     - example: {i: 369894, j: -1220627, serial: 1}
-- [ ] show user the coin IDs as strings
+- [x] show user the coin IDs as strings
     - example: “369894:-1220627#0”
     - example: “369894:-1220627#1”
 
 
 ### just for fun
 - [ ] let player pick/customize avatar 
+- [ ] let play pick exactly which coin to take
+- [ ] exquisite cache / refrigerator magnets

@@ -42,7 +42,7 @@ const ICON_WIDTH = MY_WINDOW.WIDTH / 18;
 //* INTERFACES *//
 interface Cache {
   cell: Cell;
-  coins: number;
+  coins: string[];
   message: HTMLDivElement;
   popup(): void;
 }
@@ -73,11 +73,11 @@ const myIcon = leaflet.icon({
 const player = {
   location: INIT_LOCATION,
   avatar: leaflet.marker(INIT_LOCATION, { icon: myIcon }),
-  coins: DEBUG.INIT_PLAYER_CACHE,
+  coins: <string[]> [],
   message: document.createElement("div"),
   tooltip: () => {
     player.message.innerHTML =
-      `you have <span id="value">${player.coins}</span> coins`;
+      `you have <span id="value">${player.coins.length}</span> coins`;
     return player.avatar.bindTooltip(player.message, {
       offset: [ICON_WIDTH / 2, 0],
     });
@@ -103,14 +103,14 @@ neighborCell.forEach((neighbor) => {
 function makeCache(cell: Cell) {
   const cache: Cache = {
     cell: cell,
-    coins: Math.floor(luck([cell.i, cell.j, COIN_LUCK_MOD].toString()) * 100),
+    coins: generateCoins(cell),
     message: document.createElement("div"),
     popup: () => {
       const rect = leaflet.rectangle(board.getCellBounds(cache.cell));
       rect.addTo(map);
       rect.bindPopup(() => {
         cache.message.innerHTML =
-          `<div>This is a cache with <span id="value">${cache.coins}</span> coins</div>
+          `<div>This is a cache with <span id="value">${cache.coins.length}</span> coins</div>
           <div>location: (${cache.cell.i}, ${cache.cell.j})</div>
           <button id="collect">collect</button>
           <button id="deposit">deposit</button>`;
@@ -130,6 +130,18 @@ function makeCache(cell: Cell) {
   return cache;
 }
 
+function generateCoins(cell: Cell) {
+  const coordString = `${cell.i}:${cell.j}`;
+  const amount = Math.floor(
+    luck([cell.i, cell.j, COIN_LUCK_MOD].toString()) * 100,
+  );
+  const coins = [];
+  for (let i = 1; i <= amount; i++) {
+    coins.push(`${coordString}#${i}`);
+  }
+  return coins;
+}
+
 //  > helper function(s) (cache)
 function cacheButtonsHandler(cache: Cache, buttons: HTMLButtonElement[]) {
   const cacheValue = cache.message.querySelector<HTMLSpanElement>("#value")!;
@@ -137,14 +149,24 @@ function cacheButtonsHandler(cache: Cache, buttons: HTMLButtonElement[]) {
 
   buttons.forEach((button) => {
     button.addEventListener("click", () => {
-      const delta = (button.id === "collect") ? -1 : 1;
-      const limiter = (button.id === "collect") ? cache.coins : player.coins;
+      //const delta = (button.id === "collect") ? "" : 1;
+      const limiter = (button.id === "collect")
+        ? cache.coins.length
+        : player.coins.length;
       if (limiter > 0) {
-        cache.coins += delta;
-        player.coins -= delta;
+        switch (button.id) {
+          case "collect":
+            player.coins.push(cache.coins.pop()!);
+            break;
+          case "deposit":
+            cache.coins.push(player.coins.pop()!);
+            break;
+          default:
+            break;
+        }
       }
-      cacheValue.innerHTML = cache.coins.toString();
-      playerValue.innerHTML = player.coins.toString();
+      cacheValue.innerHTML = cache.coins.length.toString();
+      playerValue.innerHTML = player.coins.length.toString();
     });
   });
 }
