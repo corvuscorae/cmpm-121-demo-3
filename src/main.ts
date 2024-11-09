@@ -1,6 +1,7 @@
 // @deno-types="npm:@types/leaflet@^1.9.14"
-import leaflet, { Rectangle } from "leaflet";
+import leaflet from "leaflet";
 import luck from "./luck.ts";
+import { Board, Cell } from "./board.ts";
 
 // style sheets
 import "leaflet/dist/leaflet.css";
@@ -28,8 +29,8 @@ const CELL_WIDTH = 0.00008;
 const NEIGHBORHOOD_SIZE = 8;
 
 //  > cache stuff
-const CACHE_LUCK_MOD = "raven";
-const COIN_LUCK_MOD = "allison";
+const CACHE_LUCK_MOD = "52 Ally's";
+const COIN_LUCK_MOD = "sagan";
 const SPAWN_PROBABILITY = 0.10; // 10% spawn probability
 
 //  > player icon stuff
@@ -40,7 +41,7 @@ const ICON_WIDTH = MY_WINDOW.WIDTH / 18;
 
 //* INTERFACES *//
 interface Cache {
-  rect: Rectangle;
+  cell: Cell;
   coins: number;
   message: HTMLDivElement;
   popup(): void;
@@ -86,35 +87,31 @@ player.avatar.addTo(map);
 player.tooltip();
 
 //* GRID *//
-const liveCache: Cache[] = [];
-for (let i = -NEIGHBORHOOD_SIZE; i < NEIGHBORHOOD_SIZE; i++) {
-  for (let j = -NEIGHBORHOOD_SIZE; j < NEIGHBORHOOD_SIZE; j++) {
-    const roll = luck([i, j, CACHE_LUCK_MOD].toString());
-    if (roll < SPAWN_PROBABILITY) liveCache.push(makeCache(i, j)); // deterministic cell generation
-  }
-}
+const board: Board = new Board(CELL_WIDTH, NEIGHBORHOOD_SIZE);
+
+const neighborCache: Cache[] = [];
+const neighborCell: Cell[] = board.getCellsNearPoint(player.location);
+
+neighborCell.forEach((neighbor) => {
+  const i = neighbor.i;
+  const j = neighbor.j;
+  const roll = luck([i, j, CACHE_LUCK_MOD].toString());
+  if (roll < SPAWN_PROBABILITY) neighborCache.push(makeCache(neighbor));
+});
 
 //* CACHES *//
-function makeCache(i: number, j: number) {
-  const cell = leaflet.latLngBounds([
-    [
-      player.location.lat + i * CELL_WIDTH,
-      player.location.lng + j * CELL_WIDTH,
-    ],
-    [
-      player.location.lat + (i + 1) * CELL_WIDTH,
-      player.location.lng + (j + 1) * CELL_WIDTH,
-    ],
-  ]);
-
+function makeCache(cell: Cell) {
   const cache: Cache = {
-    rect: leaflet.rectangle(cell),
-    coins: Math.floor(luck([i, j, COIN_LUCK_MOD].toString()) * 100),
+    cell: cell,
+    coins: Math.floor(luck([cell.i, cell.j, COIN_LUCK_MOD].toString()) * 100),
     message: document.createElement("div"),
     popup: () => {
-      cache.rect.bindPopup(() => {
+      const rect = leaflet.rectangle(board.getCellBounds(cache.cell));
+      rect.addTo(map);
+      rect.bindPopup(() => {
         cache.message.innerHTML =
           `<div>This is a cache with <span id="value">${cache.coins}</span> coins</div>
+          <div>location: (${cache.cell.i}, ${cache.cell.j})</div>
           <button id="collect">collect</button>
           <button id="deposit">deposit</button>`;
 
@@ -122,6 +119,7 @@ function makeCache(i: number, j: number) {
           cache.message.querySelector<HTMLButtonElement>("#collect")!,
           cache.message.querySelector<HTMLButtonElement>("#deposit")!,
         ];
+
         cacheButtonsHandler(cache, buttons);
 
         return cache.message;
@@ -152,7 +150,6 @@ function cacheButtonsHandler(cache: Cache, buttons: HTMLButtonElement[]) {
 }
 
 //  > put caches on map
-liveCache.forEach((cache) => {
-  cache.rect.addTo(map);
+neighborCache.forEach((cache) => {
   cache.popup();
 });
