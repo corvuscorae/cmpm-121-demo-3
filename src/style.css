@@ -36,11 +36,18 @@ h1 {
 }
 
 #controlPanel {
-  padding: 1rem;
+  padding: 0.5rem;
 }
 
-#statusPanel {
-  padding: 1rem;
+.panelButton {
+  background-color: #fff;
+  color: #fff;
+  padding: 0em;
+}
+
+#statusbar {
+  padding: 0.5rem;
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
 }
 
 #map {
@@ -49,13 +56,13 @@ h1 {
 }
 
 button {
-  border-radius: 8px;
+  border-radius: 5px;
   border: 1px solid transparent;
   padding: 0.6em 1.2em;
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #10c400;
+  background-color: #3388ff;
   color: #fff;
   cursor: pointer;
   transition: border-color 0.25s;

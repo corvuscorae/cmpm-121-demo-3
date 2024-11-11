@@ -1,5 +1,5 @@
 // @deno-types="npm:@types/leaflet@^1.9.14"
-import leaflet from "leaflet";
+import leaflet, { LatLng } from "leaflet";
 import luck from "./luck.ts";
 import { Board, Cell } from "./board.ts";
 
@@ -47,6 +47,12 @@ interface Cache {
   popup(): void;
 }
 
+interface MovementButton {
+  button: HTMLButtonElement;
+  direction: string;
+  //execute(): void;
+}
+
 //* MAP *//
 const map = leaflet.map(document.getElementById("map")!, {
   center: INIT_LOCATION,
@@ -87,6 +93,50 @@ player.avatar.addTo(map);
 player.tooltip();
 
 const statusBar = document.getElementById("statusbar");
+
+const movementButtonns = document.getElementById("controlPanel");
+
+const buttons: MovementButton[] = [];
+const directions = ["🔼", "🔽", "◀️", "▶️"];
+directions.forEach((dir) => {
+  const newButton = {
+    button: document.createElement("button"),
+    direction: dir,
+  };
+  buttons.push(newButton);
+  newButton.button.innerHTML = dir;
+  newButton.button.classList.add("panelButton");
+  movementButtonns!.appendChild(newButton.button);
+});
+
+buttons.forEach((b) => {
+  b.button.addEventListener("click", () => {
+    switch (b.direction) {
+      case "🔼": // move up
+        move(player.location, 0, CELL_WIDTH);
+        break;
+      case "🔽": // move down
+        move(player.location, 0, -CELL_WIDTH);
+        break;
+      case "◀️": // move left
+        move(player.location, -CELL_WIDTH, 0);
+        break;
+      case "▶️": // move right
+        move(player.location, CELL_WIDTH, 0);
+        break;
+      default:
+        break;
+    }
+    player.avatar.setLatLng(player.location);
+  });
+});
+
+function move(target: LatLng, x: number, y: number) {
+  target.lng += x;
+  target.lat += y;
+}
+
+//document.createElement("button");
 
 //* GRID *//
 const board: Board = new Board(CELL_WIDTH, NEIGHBORHOOD_SIZE);
@@ -146,9 +196,6 @@ function generateCoins(cell: Cell) {
 
 //  > helper function(s) (cache)
 function cacheButtonsHandler(cache: Cache, buttons: HTMLButtonElement[]) {
-  const cacheValue = cache.message.querySelector<HTMLSpanElement>("#value")!;
-  const playerValue = player.message.querySelector<HTMLSpanElement>("#value")!;
-
   buttons.forEach((button) => {
     button.addEventListener("click", () => {
       //const delta = (button.id === "collect") ? "" : 1;
@@ -167,9 +214,20 @@ function cacheButtonsHandler(cache: Cache, buttons: HTMLButtonElement[]) {
             break;
         }
       }
+
+      const cacheValue = cache.message.querySelector<HTMLSpanElement>(
+        "#value",
+      )!;
+      const playerValue = player.message.querySelector<HTMLSpanElement>(
+        "#value",
+      )!;
+      const playerInventory = statusBar?.querySelector<HTMLSpanElement>(
+        "#value",
+      )!;
+
       cacheValue.innerHTML = cache.coins.length.toString();
       playerValue.innerHTML = player.coins.length.toString();
-      statusBar!.innerHTML = arrayToString(player.coins);
+      playerInventory.innerHTML = arrayToString(player.coins);
     });
   });
 }

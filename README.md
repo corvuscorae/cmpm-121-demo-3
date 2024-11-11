@@ -32,6 +32,11 @@ Map background: [OpenStreetMap](http://www.openstreetmap.org/copyright)
     - example: “369894:-1220627#0”
     - example: “369894:-1220627#1”
 
+### D3.c
+- [x] arrows for player movement
+    - movement buttons move the player’s location with the same cell-granularity used by other aspects of the game (e.g. 0.0001 degrees at a time).
+- [ ] Regenerate cache locations as the player moves so that only locations sufficiently close to their position are visible on the map
+- [ ] Using the Memento pattern save the state of caches so that their contents is preserved even when the player moves out of view and back
 
 ### just for fun
 - [ ] let player pick/customize avatar 
