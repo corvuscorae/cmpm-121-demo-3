@@ -86,6 +86,8 @@ const player = {
 player.avatar.addTo(map);
 player.tooltip();
 
+const statusBar = document.getElementById("statusbar");
+
 //* GRID *//
 const board: Board = new Board(CELL_WIDTH, NEIGHBORHOOD_SIZE);
 
@@ -167,6 +169,7 @@ function cacheButtonsHandler(cache: Cache, buttons: HTMLButtonElement[]) {
       }
       cacheValue.innerHTML = cache.coins.length.toString();
       playerValue.innerHTML = player.coins.length.toString();
+      statusBar!.innerHTML = arrayToString(player.coins);
     });
   });
 }
@@ -175,3 +178,13 @@ function cacheButtonsHandler(cache: Cache, buttons: HTMLButtonElement[]) {
 neighborCache.forEach((cache) => {
   cache.popup();
 });
+
+///// DEBUG
+
+function arrayToString(array: string[]) {
+  let result = "";
+  array.forEach((elem) => {
+    result = `${result} ${elem}`;
+  });
+  return result;
+}
