@@ -1,5 +1,5 @@
 // @deno-types="npm:@types/leaflet@^1.9.14"
-import leaflet, { LatLng } from "leaflet";
+import leaflet, { LatLng, Rectangle } from "leaflet";
 import luck from "./luck.ts";
 import { Board, Cell } from "./board.ts";
 
@@ -42,6 +42,7 @@ const ICON_WIDTH = MY_WINDOW.WIDTH / 18;
 //* INTERFACES *//
 interface Cache {
   cell: Cell;
+  marker: Rectangle;
   coins: string[];
   message: HTMLDivElement;
   popup(): void;
@@ -50,7 +51,6 @@ interface Cache {
 interface MovementButton {
   button: HTMLButtonElement;
   direction: string;
-  //execute(): void;
 }
 
 //* MAP *//
@@ -128,6 +128,8 @@ buttons.forEach((b) => {
         break;
     }
     player.avatar.setLatLng(player.location);
+    map.setView(player.location);
+    regenerateCaches(player.location);
   });
 });
 
@@ -141,26 +143,47 @@ function move(target: LatLng, x: number, y: number) {
 //* GRID *//
 const board: Board = new Board(CELL_WIDTH, NEIGHBORHOOD_SIZE);
 
-const neighborCache: Cache[] = [];
-const neighborCell: Cell[] = board.getCellsNearPoint(player.location);
+const neighborhood = {
+  cacheArray: <Cache[]> [],
+  rectArray: <Rectangle[]> [],
+};
 
-neighborCell.forEach((neighbor) => {
-  const i = neighbor.i;
-  const j = neighbor.j;
-  const roll = luck([i, j, CACHE_LUCK_MOD].toString());
-  if (roll < SPAWN_PROBABILITY) neighborCache.push(makeCache(neighbor));
-});
+function regenerateCaches(p: LatLng) {
+  const neighborCell: Cell[] = board.getCellsNearPoint(p);
+  neighborhood.cacheArray = [];
+  // TODO: only delete out of bounds caches
+  neighborhood.rectArray.forEach((rect) => {
+    map.removeLayer(rect);
+  });
+
+  neighborCell.forEach((neighbor) => {
+    const i = neighbor.i;
+    const j = neighbor.j;
+    const roll = luck([i, j, CACHE_LUCK_MOD].toString());
+    if (roll < SPAWN_PROBABILITY) {
+      neighborhood.cacheArray.push(makeCache(neighbor));
+    }
+  });
+
+  //  > put caches on map
+  neighborhood.cacheArray.forEach((cache) => {
+    cache.popup();
+  });
+}
+regenerateCaches(player.location);
 
 //* CACHES *//
 function makeCache(cell: Cell) {
   const cache: Cache = {
     cell: cell,
+    marker: leaflet.rectangle(board.getCellBounds(cell)),
     coins: generateCoins(cell),
     message: document.createElement("div"),
     popup: () => {
-      const rect = leaflet.rectangle(board.getCellBounds(cache.cell));
-      rect.addTo(map);
-      rect.bindPopup(() => {
+      cache.marker.addTo(map);
+      neighborhood.rectArray.push(cache.marker);
+
+      cache.marker.bindPopup(() => {
         cache.message.innerHTML =
           `<div>This is a cache with <span id="value">${cache.coins.length}</span> coins</div>
           <div>location: (${cache.cell.i}, ${cache.cell.j})</div>
@@ -173,7 +196,6 @@ function makeCache(cell: Cell) {
         ];
 
         cacheButtonsHandler(cache, buttons);
-
         return cache.message;
       });
     },
@@ -231,11 +253,6 @@ function cacheButtonsHandler(cache: Cache, buttons: HTMLButtonElement[]) {
     });
   });
 }
-
-//  > put caches on map
-neighborCache.forEach((cache) => {
-  cache.popup();
-});
 
 ///// DEBUG
 
