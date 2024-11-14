@@ -1,9 +1,9 @@
 # cmpm-121-demo-3
 
 ## Credits!
-Map library: [Leaflet](https://leafletjs.com/)
-Map background: [OpenStreetMap](http://www.openstreetmap.org/copyright)
-Cache memento configuration inspired by Anthony Nguyen's [memento class](https://github.com/Mapeggs/cmpm-121-demo-3/blob/main/src/main.ts)
+- Map library: [Leaflet](https://leafletjs.com/)
+- Map background: [OpenStreetMap](http://www.openstreetmap.org/copyright)
+- Cache memento configuration inspired by Anthony Nguyen's [memento class](https://github.com/Mapeggs/cmpm-121-demo-3/blob/main/src/main.ts)
 
 ## Next steps!
 
