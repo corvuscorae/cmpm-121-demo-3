@@ -34,15 +34,15 @@ export class Board {
   }
 
   getCellBounds(cell: Cell): leaflet.LatLngBounds {
-    const topLeft = {
-      lat: cell.i * this.tileWidth,
-      lng: cell.j * this.tileWidth,
-    };
-    const bottomRight = {
-      lat: (cell.i + 1) * this.tileWidth,
-      lng: (cell.j + 1) * this.tileWidth,
-    };
-    return [topLeft, bottomRight];
+    const topLeft = leaflet.latLng(
+      cell.i * this.tileWidth,
+      cell.j * this.tileWidth,
+    );
+    const bottomRight = leaflet.latLng(
+      (cell.i + 1) * this.tileWidth,
+      (cell.j + 1) * this.tileWidth,
+    );
+    return new leaflet.LatLngBounds(topLeft, bottomRight);
   }
 
   getCellsNearPoint(point: leaflet.LatLng): Cell[] {

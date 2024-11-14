@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 // @deno-types="npm:@types/leaflet@^1.9.14"
 import leaflet, { LatLng, Rectangle } from "leaflet";
 import luck from "./luck.ts";
@@ -55,63 +54,21 @@ interface MovementButton {
 }
 
 //* MEMORY *//
-function remember(object: any, memory: any) {
-  const newMem = memento(object);
-  memory.addMemento(newMem);
+// cache memento configuration inspired by Anthony Nguyen's memento class
+// https://github.com/Mapeggs/cmpm-121-demo-3/blob/main/src/main.ts
+function cacheMemento(init: Map<string, string[]>) {
+  const state = init;
+
+  function restore(key: string) {
+    return state.has(key) ? state.get(key) : null;
+  }
+
+  function save(key: string, coins: string[]) {
+    state.set(key, coins);
+  }
+
+  return { restore, save };
 }
-
-function memento(init: any) {
-  let state = init;
-
-  function create() {
-    return { state };
-  }
-
-  function restore(memento: any) {
-    state = { memento };
-  }
-
-  function setState(newState: any) {
-    state = { state, newState };
-  }
-
-  function getState() {
-    return state;
-  }
-
-  return { create, restore, setState, getState };
-}
-
-function caretaker() {
-  const mementos = new Map();
-
-  function addMemento(id: any, memento: any) {
-    mementos.set(id, memento);
-  }
-
-  function getMemento(query: any) {
-    return mementos.get(query);
-  }
-
-  //function hasMemento(query: any){ return mementos.has(query); }
-
-  return { addMemento, getMemento /*, hasMemento*/ };
-}
-
-//////////////////////////////////////////////////
-//const idk = memento([1, 2, 3]);
-//const history = caretaker();
-//
-////idk.setState([4, 5, 6])
-//history.addMemento(idk.create());
-//console.log("change 1:", idk.getState());
-//
-//idk.setState([7, 8, 9])
-//console.log("change 2:", idk.getState());
-//
-//idk.restore(history.getMemento(0));
-//console.log("restored:", idk.getState());
-//////////////////////////////////////////////////
 
 //* MAP *//
 const map = leaflet.map(document.getElementById("map")!, {
@@ -198,28 +155,24 @@ function move(target: LatLng, x: number, y: number) {
   target.lat += y;
 }
 
-//document.createElement("button");
-
 //* GRID *//
 const board: Board = new Board(CELL_WIDTH, NEIGHBORHOOD_SIZE);
 
 const neighborhood = {
   cacheArray: <Cache[]> [],
   rectArray: <Rectangle[]> [],
-  memory: caretaker(),
+  memory: cacheMemento(new Map<string, string[]>()),
 };
 
 function regenerateCaches(p: LatLng) {
   const neighborCell: Cell[] = board.getCellsNearPoint(p);
 
   neighborhood.cacheArray.forEach((cache) => {
-    console.log(cache.coins);
-    //const neighborString = JSON.stringify(cache); //
-    //remember({id: neighborString, coins: cache.coins}, neighborhood.memory);
+    const neighborString = JSON.stringify(cache.cell);
+    neighborhood.memory.save(neighborString, cache.coins); // update memento
   });
   neighborhood.cacheArray = [];
 
-  // TODO: only delete out of bounds caches
   neighborhood.rectArray.forEach((rect) => {
     map.removeLayer(rect);
   });
@@ -230,18 +183,11 @@ function regenerateCaches(p: LatLng) {
     const roll = luck([i, j, CACHE_LUCK_MOD].toString());
     if (roll < SPAWN_PROBABILITY) {
       const neighborString = JSON.stringify(neighbor);
-      const memento = neighborhood.memory.getMemento(neighborString);
-      console.log(memento);
-      if (!memento) {
-        remember({ id: neighborString, object: [] }, neighborhood.memory);
-        //////////////// remember id/coins array
-        // --> LIKE THIS: const newMem = {id: id, object: neighbor.coin}
-        //memento = memento();
-      }
-      neighborhood.cacheArray.push(makeCache(neighbor));
+      const mem = neighborhood.memory.restore(neighborString); // check for memento
+      neighborhood.cacheArray.push(makeCache(neighbor, mem!));
     }
   });
-
+  console.log(neighborhood.memory);
   //  > put caches on map
   neighborhood.cacheArray.forEach((cache) => {
     cache.popup();
@@ -250,11 +196,11 @@ function regenerateCaches(p: LatLng) {
 regenerateCaches(player.location);
 
 //* CACHES *//
-function makeCache(cell: Cell) {
+function makeCache(cell: Cell, coins?: string[]) {
   const cache: Cache = {
     cell: cell,
     marker: leaflet.rectangle(board.getCellBounds(cell)),
-    coins: generateCoins(cell),
+    coins: coins ? coins : generateCoins(cell), // coins holds a memento check. if empty, make new coins array
     message: document.createElement("div"),
     popup: () => {
       cache.marker.addTo(map);
@@ -281,12 +227,13 @@ function makeCache(cell: Cell) {
   return cache;
 }
 
+// deterministically generated coins array
 function generateCoins(cell: Cell) {
   const coordString = `${cell.i}:${cell.j}`;
   const amount = Math.floor(
     luck([cell.i, cell.j, COIN_LUCK_MOD].toString()) * 100,
   );
-  const coins = [];
+  const coins: string[] = [];
   for (let i = 1; i <= amount; i++) {
     const coin = `${coordString}#${i}`;
     coins.push(coin);
@@ -299,7 +246,6 @@ function generateCoins(cell: Cell) {
 function cacheButtonsHandler(cache: Cache, buttons: HTMLButtonElement[]) {
   buttons.forEach((button) => {
     button.addEventListener("click", () => {
-      //const delta = (button.id === "collect") ? "" : 1;
       const limiter = (button.id === "collect")
         ? cache.coins.length
         : player.coins.length;

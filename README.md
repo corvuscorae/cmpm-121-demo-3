@@ -3,6 +3,7 @@
 ## Credits!
 Map library: [Leaflet](https://leafletjs.com/)
 Map background: [OpenStreetMap](http://www.openstreetmap.org/copyright)
+Cache memento configuration inspired by Anthony Nguyen's [memento class](https://github.com/Mapeggs/cmpm-121-demo-3/blob/main/src/main.ts)
 
 ## Next steps!
 
@@ -36,7 +37,7 @@ Map background: [OpenStreetMap](http://www.openstreetmap.org/copyright)
 - [x] arrows for player movement
     - movement buttons move the player’s location with the same cell-granularity used by other aspects of the game (e.g. 0.0001 degrees at a time).
 - [x] Regenerate cache locations as the player moves so that only locations sufficiently close to their position are visible on the map
-- [ ] Using the Memento pattern save the state of caches so that their contents is preserved even when the player moves out of view and back
+- [x] Using the Memento pattern save the state of caches so that their contents is preserved even when the player moves out of view and back
 
 ### just for fun
 - [ ] let player pick/customize avatar 
