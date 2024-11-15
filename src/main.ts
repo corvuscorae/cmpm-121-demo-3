@@ -114,7 +114,7 @@ const statusBar = document.getElementById("statusbar");
 const movementButtonns = document.getElementById("controlPanel");
 
 const buttons: MovementButton[] = [];
-const directions = ["🔼", "🔽", "◀️", "▶️"];
+const directions = ["🔼", "🔽", "◀️", "▶️", "🌐"];
 directions.forEach((dir) => {
   const newButton = {
     button: document.createElement("button"),
@@ -140,6 +140,18 @@ buttons.forEach((b) => {
         break;
       case "▶️": // move right
         move(player.location, CELL_WIDTH, 0);
+        break;
+      case "🌐": // move to device geolocation
+        // pseudocode --
+        // get geo x
+        // find offset bn geo x and player x:
+        //  let xoffset = geo x - player.x ??
+        // get geo y
+        // find offset bn geo y and player y:
+        //  let yoffset = geo x - player.y ??
+        // move player by offset
+        // move(player.location, xoffset, yoffset)
+        console.log("device geo location");
         break;
       default:
         break;
