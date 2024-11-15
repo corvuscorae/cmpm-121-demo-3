@@ -41,10 +41,14 @@
 - [x] Using the Memento pattern save the state of caches so that their contents is preserved even when the player moves out of view and back
 
 ### D3.d
-- [ ] Allow the player to turn on automatic position updating based on their device’s current geolocation (pressing the 🌐 button).
+- [x] Allow the player to turn on automatic position updating based on their device’s current geolocation (pressing the 🌐 button).
 - [ ] Use a persistent data storage mechanism to allow the player to continue a gameplay session even after they have closed the game’s browser window.
 - [ ] Use a polyline to render the player’s movement history.
 - [ ] Allow the player to reset the game’s state (pressing the 🚮button), effectively returning all coins to their home caches and erasing their (potentially sensitive) location history.
+
+### ui fixes
+- [ ] player's collected coins array should look nicer
+- [ ] resize map to fill window except for buttons panel and status bar (player coins array)
 
 ### just for fun
 - [ ] let player pick/customize avatar 
