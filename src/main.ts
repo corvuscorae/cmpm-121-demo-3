@@ -9,7 +9,7 @@ import "./style.css";
 
 //* DEBUG TOOLBOX *//
 const DEBUG = {
-  ALLOW_ZOOM: false,
+  ALLOW_ZOOM: true,
   INIT_PLAYER_CACHE: 0,
 };
 
@@ -111,10 +111,10 @@ player.tooltip();
 
 const statusBar = document.getElementById("statusbar");
 
-const movementButtonns = document.getElementById("controlPanel");
+const movementButtons = document.getElementById("controlPanel");
 
 const buttons: MovementButton[] = [];
-const directions = ["🔼", "🔽", "◀️", "▶️", "🌐"];
+const directions = ["🔼", "🔽", "◀️", "▶️"];
 directions.forEach((dir) => {
   const newButton = {
     button: document.createElement("button"),
@@ -123,7 +123,7 @@ directions.forEach((dir) => {
   buttons.push(newButton);
   newButton.button.innerHTML = dir;
   newButton.button.classList.add("panelButton");
-  movementButtonns!.appendChild(newButton.button);
+  movementButtons!.appendChild(newButton.button);
 });
 
 buttons.forEach((b) => {
@@ -131,41 +131,80 @@ buttons.forEach((b) => {
     switch (b.direction) {
       case "🔼": // move up
         move(player.location, 0, CELL_WIDTH);
+        updatePlayer();
         break;
       case "🔽": // move down
         move(player.location, 0, -CELL_WIDTH);
+        updatePlayer();
         break;
       case "◀️": // move left
         move(player.location, -CELL_WIDTH, 0);
+        updatePlayer();
         break;
       case "▶️": // move right
         move(player.location, CELL_WIDTH, 0);
-        break;
-      case "🌐": // move to device geolocation
-        // pseudocode --
-        // get geo x
-        // find offset bn geo x and player x:
-        //  let xoffset = geo x - player.x ??
-        // get geo y
-        // find offset bn geo y and player y:
-        //  let yoffset = geo x - player.y ??
-        // move player by offset
-        // move(player.location, xoffset, yoffset)
-        console.log("device geo location");
+        updatePlayer();
         break;
       default:
         break;
     }
-    player.avatar.setLatLng(player.location);
-    map.setView(player.location);
-    regenerateCaches(player.location);
   });
 });
 
-function move(target: LatLng, x: number, y: number) {
-  target.lng += x;
-  target.lat += y;
+const geolocate = {
+  toggle: document.createElement("input"),
+  watchID: -1,
+  init: () => {
+    geolocate.toggle.type = "checkbox";
+    geolocate.toggle.name = "geoToggle.switch";
+    const label = document.createElement("label");
+    label.htmlFor = "geoToggle.switch";
+    label.appendChild(document.createTextNode("🌐"));
+
+    movementButtons!.appendChild(label);
+    movementButtons!.appendChild(geolocate.toggle);
+  },
+  listener: () => {
+    geolocate.toggle.addEventListener("change", () => {
+      if (geolocate.toggle.checked) {
+        buttons.forEach((b) => {
+          b.button.disabled = true;
+        });
+        geolocate.watchID = navigator.geolocation.watchPosition((p) => {
+          const latOffset = p.coords.latitude - player.location.lat;
+          const lngOffset = p.coords.longitude - player.location.lng;
+          move(player.location, lngOffset, latOffset);
+          updatePlayer();
+        });
+      } else {
+        buttons.forEach((b) => {
+          b.button.disabled = false;
+        });
+      }
+    });
+  },
+};
+geolocate.init();
+geolocate.listener();
+
+function move(target: LatLng, lng: number, lat: number) {
+  target.lng += lng;
+  target.lat += lat;
 }
+
+function updatePlayer() {
+  player.avatar.setLatLng(player.location);
+  map.setView(player.location);
+  regenerateCaches(player.location);
+}
+
+//function geoToggle(){
+//  navigator.geolocation.getCurrentPosition((position) => {
+//
+//
+//
+//  });
+//}
 
 //* GRID *//
 const board: Board = new Board(CELL_WIDTH, NEIGHBORHOOD_SIZE);
@@ -199,7 +238,6 @@ function regenerateCaches(p: LatLng) {
       neighborhood.cacheArray.push(makeCache(neighbor, mem!));
     }
   });
-  console.log(neighborhood.memory);
   //  > put caches on map
   neighborhood.cacheArray.forEach((cache) => {
     cache.popup();
