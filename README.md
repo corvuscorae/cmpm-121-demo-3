@@ -49,6 +49,7 @@
 ### ui fixes
 - [ ] player's collected coins array should look nicer
 - [ ] resize map to fill window except for buttons panel and status bar (player coins array)
+- [ ] put loading message and disable interactions while loading geolocation
 
 ### just for fun
 - [ ] let player pick/customize avatar 

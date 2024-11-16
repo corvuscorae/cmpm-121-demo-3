@@ -1,11 +1,13 @@
 // @deno-types="npm:@types/leaflet@^1.9.14"
-import leaflet, { LatLng, Rectangle } from "leaflet";
+import leaflet, { LatLng, Marker, Rectangle } from "leaflet";
 import luck from "./luck.ts";
 import { Board, Cell } from "./board.ts";
 
 // style sheets
 import "leaflet/dist/leaflet.css";
 import "./style.css";
+
+// data to store: player location and coins and neighborhood ///////////////////////
 
 //* DEBUG TOOLBOX *//
 const DEBUG = {
@@ -53,6 +55,19 @@ interface MovementButton {
   direction: string;
 }
 
+interface PersistantPlayerData {
+  location: LatLng;
+  coins: string[];
+}
+
+interface Player {
+  data: PersistantPlayerData;
+  avatar: Marker;
+  message: HTMLDivElement;
+  tooltip(): void;
+  init(): void;
+}
+
 //* MEMORY *//
 // cache memento configuration inspired by Anthony Nguyen's memento class
 // https://github.com/Mapeggs/cmpm-121-demo-3/blob/main/src/main.ts
@@ -93,21 +108,35 @@ const myIcon = leaflet.icon({
   iconSize: [ICON_WIDTH, ICON_WIDTH],
 });
 
-const player = {
-  location: INIT_LOCATION,
+const player: Player = {
+  data: getPlayerData(),
   avatar: leaflet.marker(INIT_LOCATION, { icon: myIcon }),
-  coins: <string[]> [],
   message: document.createElement("div"),
   tooltip: () => {
     player.message.innerHTML =
-      `you have <span id="value">${player.coins.length}</span> coins`;
+      `you have <span id="value">${player.data.coins.length}</span> coins`;
     return player.avatar.bindTooltip(player.message, {
       offset: [ICON_WIDTH / 2, 0],
     });
   },
+  init: () => {
+    player.avatar.addTo(map);
+    player.tooltip();
+    updatePlayerData(0, 0);
+  },
 };
-player.avatar.addTo(map);
-player.tooltip();
+
+function getPlayerData() {
+  const init = localStorage.getItem("player");
+  let data = null;
+  if (!init) {
+    data = {
+      location: INIT_LOCATION,
+      coins: <string[]> [],
+    };
+  } else data = JSON.parse(init);
+  return data;
+}
 
 const statusBar = document.getElementById("statusbar");
 
@@ -130,20 +159,16 @@ buttons.forEach((b) => {
   b.button.addEventListener("click", () => {
     switch (b.direction) {
       case "🔼": // move up
-        move(player.location, 0, CELL_WIDTH);
-        updatePlayer();
+        updatePlayerData(0, CELL_WIDTH);
         break;
       case "🔽": // move down
-        move(player.location, 0, -CELL_WIDTH);
-        updatePlayer();
+        updatePlayerData(0, -CELL_WIDTH);
         break;
       case "◀️": // move left
-        move(player.location, -CELL_WIDTH, 0);
-        updatePlayer();
+        updatePlayerData(-CELL_WIDTH, 0);
         break;
       case "▶️": // move right
-        move(player.location, CELL_WIDTH, 0);
-        updatePlayer();
+        updatePlayerData(CELL_WIDTH, 0);
         break;
       default:
         break;
@@ -171,15 +196,15 @@ const geolocate = {
           b.button.disabled = true;
         });
         geolocate.watchID = navigator.geolocation.watchPosition((p) => {
-          const latOffset = p.coords.latitude - player.location.lat;
-          const lngOffset = p.coords.longitude - player.location.lng;
-          move(player.location, lngOffset, latOffset);
-          updatePlayer();
+          const latOffset = p.coords.latitude - player.data.location.lat;
+          const lngOffset = p.coords.longitude - player.data.location.lng;
+          updatePlayerData(lngOffset, latOffset);
         });
       } else {
         buttons.forEach((b) => {
           b.button.disabled = false;
         });
+        navigator.geolocation.clearWatch(geolocate.watchID);
       }
     });
   },
@@ -187,24 +212,16 @@ const geolocate = {
 geolocate.init();
 geolocate.listener();
 
-function move(target: LatLng, lng: number, lat: number) {
-  target.lng += lng;
-  target.lat += lat;
-}
+function updatePlayerData(lng: number, lat: number) {
+  player.data.location.lng += lng;
+  player.data.location.lat += lat;
 
-function updatePlayer() {
-  player.avatar.setLatLng(player.location);
-  map.setView(player.location);
-  regenerateCaches(player.location);
-}
+  player.avatar.setLatLng(player.data.location);
+  map.setView(player.data.location);
+  regenerateCaches(player.data.location);
 
-//function geoToggle(){
-//  navigator.geolocation.getCurrentPosition((position) => {
-//
-//
-//
-//  });
-//}
+  localStorage.setItem("player", JSON.stringify(player.data));
+}
 
 //* GRID *//
 const board: Board = new Board(CELL_WIDTH, NEIGHBORHOOD_SIZE);
@@ -243,7 +260,7 @@ function regenerateCaches(p: LatLng) {
     cache.popup();
   });
 }
-regenerateCaches(player.location);
+regenerateCaches(player.data.location);
 
 //* CACHES *//
 function makeCache(cell: Cell, coins?: string[]) {
@@ -298,14 +315,14 @@ function cacheButtonsHandler(cache: Cache, buttons: HTMLButtonElement[]) {
     button.addEventListener("click", () => {
       const limiter = (button.id === "collect")
         ? cache.coins.length
-        : player.coins.length;
+        : player.data.coins.length;
       if (limiter > 0) {
         switch (button.id) {
           case "collect":
-            player.coins.push(cache.coins.pop()!);
+            player.data.coins.push(cache.coins.pop()!);
             break;
           case "deposit":
-            cache.coins.push(player.coins.pop()!);
+            cache.coins.push(player.data.coins.pop()!);
             break;
           default:
             break;
@@ -323,8 +340,8 @@ function cacheButtonsHandler(cache: Cache, buttons: HTMLButtonElement[]) {
       )!;
 
       cacheValue.innerHTML = cache.coins.length.toString();
-      playerValue.innerHTML = player.coins.length.toString();
-      playerInventory.innerHTML = arrayToString(player.coins);
+      playerValue.innerHTML = player.data.coins.length.toString();
+      playerInventory.innerHTML = arrayToString(player.data.coins);
     });
   });
 }
@@ -336,3 +353,5 @@ function arrayToString(array: string[]) { // TODO: make ui look nicer
   });
   return result;
 }
+
+player.init();
