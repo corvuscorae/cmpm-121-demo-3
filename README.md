@@ -43,7 +43,7 @@
 ### D3.d
 - [x] Allow the player to turn on automatic position updating based on their device’s current geolocation (pressing the 🌐 button).
 - [x] Use a persistent data storage mechanism to allow the player to continue a gameplay session even after they have closed the game’s browser window.
-- [ ] Use a polyline to render the player’s movement history.
+- [x] Use a polyline to render the player’s movement history.
 - [x] Allow the player to reset the game’s state (pressing the 🚮button), effectively returning all coins to their home caches and erasing their (potentially sensitive) location history.
     - [ ] Use prompt() to ask the user if they are sure they want to erase their game state before setting.
 - [ ] Allow users to click a coin identifier to center the map on the location of the coin’s home cache (even if it is very from the current location).

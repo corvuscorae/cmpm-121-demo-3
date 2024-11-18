@@ -1,5 +1,5 @@
 // @deno-types="npm:@types/leaflet@^1.9.14"
-import leaflet, { LatLng, Marker, Rectangle } from "leaflet";
+import leaflet, { LatLng, Marker, Polyline, Rectangle } from "leaflet";
 import luck from "./luck.ts";
 import { Board, Cell } from "./board.ts";
 
@@ -73,6 +73,8 @@ interface PersistantPlayerData {
 
 interface Player {
   data: PersistantPlayerData;
+  path: LatLng[];
+  polyline: Polyline;
   avatar: Marker;
   message: HTMLDivElement;
   tooltip(): void;
@@ -129,6 +131,8 @@ const myIcon = leaflet.icon({
 
 const player: Player = {
   data: getPlayerData(),
+  path: [],
+  polyline: leaflet.polyline([], { color: "red" }).addTo(map),
   avatar: leaflet.marker(INIT_LOCATION, { icon: myIcon }),
   message: document.createElement("div"),
   tooltip: () => {
@@ -158,6 +162,10 @@ function getPlayerData() {
 }
 
 const statusBar = document.getElementById("statusbar");
+const playerInventory = statusBar?.querySelector<HTMLSpanElement>(
+  "#value",
+)!;
+playerInventory.innerHTML = arrayToString(player.data.coins);
 
 const movementButtons = document.getElementById("controlPanel");
 deleteLocalMemory.init();
@@ -235,6 +243,11 @@ geolocate.listener();
 function updatePlayerData(lng: number, lat: number) {
   player.data.location.lng += lng;
   player.data.location.lat += lat;
+
+  player.path.push(
+    leaflet.latLng(player.data.location.lat, player.data.location.lng),
+  );
+  player.polyline.setLatLngs(player.path);
 
   player.avatar.setLatLng(player.data.location);
   map.setView(player.data.location);
@@ -382,6 +395,7 @@ function cacheButtonsHandler(cache: Cache, buttons: HTMLButtonElement[]) {
         cache.coins,
         "neighborhood",
       );
+      localStorage.setItem("player", JSON.stringify(player.data));
 
       const cacheValue = cache.message.querySelector<HTMLSpanElement>(
         "#value",
