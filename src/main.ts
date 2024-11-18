@@ -8,6 +8,17 @@ import "leaflet/dist/leaflet.css";
 import "./style.css";
 
 // data to store: player location and coins and neighborhood ///////////////////////
+const deleteLocalMemory = {
+  button: document.createElement("button"),
+  init: () => {
+    deleteLocalMemory.button.innerHTML = "🚮";
+    deleteLocalMemory.button.classList.add("panelButton");
+    movementButtons!.appendChild(deleteLocalMemory.button);
+  },
+};
+deleteLocalMemory.button.addEventListener("click", () => {
+  localStorage.clear();
+});
 
 //* DEBUG TOOLBOX *//
 const DEBUG = {
@@ -74,15 +85,23 @@ interface Player {
 function cacheMemento(init: Map<string, string[]>) {
   const state = init;
 
-  function restore(key: string) {
-    return state.has(key) ? state.get(key) : null;
+  function restore(key: string): string[] | null {
+    return state.has(key) ? state.get(key)! : null;
   }
 
   function save(key: string, coins: string[]) {
     state.set(key, coins);
   }
 
-  return { restore, save };
+  function toString(): string {
+    const obj: { [key: string]: string[] } = {};
+    state.forEach((value, key) => {
+      obj[key] = value;
+    });
+    return JSON.stringify(obj);
+  }
+
+  return { restore, save, toString };
 }
 
 //* MAP *//
@@ -128,7 +147,7 @@ const player: Player = {
 
 function getPlayerData() {
   const init = localStorage.getItem("player");
-  let data = null;
+  let data: PersistantPlayerData;
   if (!init) {
     data = {
       location: INIT_LOCATION,
@@ -141,6 +160,7 @@ function getPlayerData() {
 const statusBar = document.getElementById("statusbar");
 
 const movementButtons = document.getElementById("controlPanel");
+deleteLocalMemory.init();
 
 const buttons: MovementButton[] = [];
 const directions = ["🔼", "🔽", "◀️", "▶️"];
@@ -226,18 +246,46 @@ function updatePlayerData(lng: number, lat: number) {
 //* GRID *//
 const board: Board = new Board(CELL_WIDTH, NEIGHBORHOOD_SIZE);
 
+const getNeighborhood = localStorage.getItem("neighborhood");
+const initMem = (!getNeighborhood)
+  ? new Map<string, string[]>()
+  : mapFromString(getNeighborhood!);
+function mapFromString(data: string) {
+  const parsedMap = JSON.parse(data);
+  const result = new Map<string, string[]>();
+  for (const key in parsedMap) {
+    result.set(key, parsedMap[key]);
+  }
+  return result;
+}
 const neighborhood = {
   cacheArray: <Cache[]> [],
   rectArray: <Rectangle[]> [],
-  memory: cacheMemento(new Map<string, string[]>()),
+  caretaker: cacheMemento(initMem),
 };
+
+function remember(
+  // deno-lint-ignore no-explicit-any
+  memory: any,
+  key: string,
+  data: string[],
+  localStorageKey?: string,
+) {
+  memory.save(key, data); // update memento
+  if (localStorageKey) localStorage.setItem(localStorageKey, memory.toString());
+}
 
 function regenerateCaches(p: LatLng) {
   const neighborCell: Cell[] = board.getCellsNearPoint(p);
 
   neighborhood.cacheArray.forEach((cache) => {
     const neighborString = JSON.stringify(cache.cell);
-    neighborhood.memory.save(neighborString, cache.coins); // update memento
+    remember(
+      neighborhood.caretaker,
+      neighborString,
+      cache.coins,
+      "neighborhood",
+    );
   });
   neighborhood.cacheArray = [];
 
@@ -251,7 +299,7 @@ function regenerateCaches(p: LatLng) {
     const roll = luck([i, j, CACHE_LUCK_MOD].toString());
     if (roll < SPAWN_PROBABILITY) {
       const neighborString = JSON.stringify(neighbor);
-      const mem = neighborhood.memory.restore(neighborString); // check for memento
+      const mem = neighborhood.caretaker.restore(neighborString); // check for memento
       neighborhood.cacheArray.push(makeCache(neighbor, mem!));
     }
   });
@@ -313,10 +361,10 @@ function generateCoins(cell: Cell) {
 function cacheButtonsHandler(cache: Cache, buttons: HTMLButtonElement[]) {
   buttons.forEach((button) => {
     button.addEventListener("click", () => {
-      const limiter = (button.id === "collect")
+      const availableCoins = (button.id === "collect")
         ? cache.coins.length
         : player.data.coins.length;
-      if (limiter > 0) {
+      if (availableCoins > 0) {
         switch (button.id) {
           case "collect":
             player.data.coins.push(cache.coins.pop()!);
@@ -328,6 +376,12 @@ function cacheButtonsHandler(cache: Cache, buttons: HTMLButtonElement[]) {
             break;
         }
       }
+      remember(
+        neighborhood.caretaker,
+        JSON.stringify(cache.cell),
+        cache.coins,
+        "neighborhood",
+      );
 
       const cacheValue = cache.message.querySelector<HTMLSpanElement>(
         "#value",
